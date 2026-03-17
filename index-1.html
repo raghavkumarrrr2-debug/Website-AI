@@ -1,0 +1,1258 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <meta name="description" content="NeuralEdge — An educational guide to Artificial Intelligence, Machine Learning, and Data Analytics basics." />
+  <title>NeuralEdge — AI, ML & Data Analytics</title>
+  <link href="https://fonts.googleapis.com/css2?family=Syne:wght@400;600;700;800&family=DM+Mono:ital,wght@0,300;0,400;1,300&family=Fraunces:ital,opsz,wght@0,9..144,300;0,9..144,700;1,9..144,300&display=swap" rel="stylesheet"/>
+  <style>
+    /* ─── DESIGN TOKENS ──────────────────────────── */
+    :root {
+      --bg:      #060810;
+      --surface: #0d1120;
+      --border:  rgba(99,130,255,0.15);
+      --accent:  #4f6fff;
+      --accent2: #00e5c8;
+      --accent3: #ff4f91;
+      --text:    #e8ecff;
+      --muted:   #6b7599;
+      --card:    #0e1428;
+      --nav-h:   72px;
+    }
+
+    /* ─── RESET ──────────────────────────────────── */
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    html { scroll-behavior: smooth; }
+    body {
+      background: var(--bg);
+      color: var(--text);
+      font-family: 'DM Mono', monospace;
+      overflow-x: hidden;
+      cursor: none;
+    }
+    /* FIX: restore cursor on touch devices */
+    @media (hover: none) { body, * { cursor: auto !important; } .cursor-dot, .cursor-ring { display: none; } }
+
+    /* ─── CUSTOM CURSOR ──────────────────────────── */
+    .cursor-dot {
+      width: 8px; height: 8px;
+      background: var(--accent2);
+      border-radius: 50%;
+      position: fixed; top: 0; left: 0;
+      pointer-events: none; z-index: 9999;
+      will-change: transform;
+    }
+    .cursor-ring {
+      width: 36px; height: 36px;
+      border: 1.5px solid var(--accent);
+      border-radius: 50%;
+      position: fixed; top: 0; left: 0;
+      pointer-events: none; z-index: 9998;
+      will-change: transform;
+      /* FIX: only transition border/color, NOT size (size changed via JS instantly) */
+      transition: border-color 0.25s, opacity 0.25s;
+    }
+    .cursor-ring.hovering {
+      border-color: var(--accent2);
+      opacity: 0.55;
+    }
+
+    /* ─── CANVAS BG ──────────────────────────────── */
+    #bg-canvas { position: fixed; inset: 0; z-index: 0; opacity: 0.55; pointer-events: none; }
+
+    /* ─── NAV ────────────────────────────────────── */
+    nav {
+      position: fixed; top: 0; left: 0; right: 0;
+      z-index: 200; height: var(--nav-h);
+      padding: 0 4rem;
+      display: flex; align-items: center; justify-content: space-between;
+      border-bottom: 1px solid var(--border);
+      backdrop-filter: blur(24px);
+      background: rgba(6,8,16,0.82);
+      transition: background 0.3s;
+    }
+    .nav-logo {
+      font-family: 'Syne', sans-serif; font-weight: 800; font-size: 1.2rem;
+      letter-spacing: -0.02em; color: var(--text); text-decoration: none;
+    }
+    .nav-logo span { color: var(--accent2); }
+    .nav-links { display: flex; gap: 2.5rem; list-style: none; }
+    .nav-links a {
+      color: var(--muted); text-decoration: none; font-size: 0.76rem;
+      letter-spacing: 0.08em; text-transform: uppercase; transition: color 0.2s;
+      cursor: none; padding: 4px 0;
+      border-bottom: 1px solid transparent; transition: color 0.2s, border-color 0.2s;
+    }
+    .nav-links a:hover, .nav-links a.active { color: var(--accent2); border-bottom-color: var(--accent2); }
+    .nav-badge {
+      background: linear-gradient(135deg, var(--accent), var(--accent2));
+      color: #fff; font-size: 0.72rem; padding: 0.35rem 1rem; border-radius: 999px;
+      font-family: 'Syne', sans-serif; font-weight: 700; letter-spacing: 0.04em;
+    }
+    /* Hamburger for mobile */
+    .hamburger {
+      display: none; flex-direction: column; gap: 5px;
+      background: none; border: none; cursor: none; padding: 6px;
+    }
+    .hamburger span {
+      display: block; width: 22px; height: 2px;
+      background: var(--text); border-radius: 2px;
+      transition: transform 0.3s, opacity 0.3s;
+    }
+    .hamburger.open span:nth-child(1) { transform: translateY(7px) rotate(45deg); }
+    .hamburger.open span:nth-child(2) { opacity: 0; }
+    .hamburger.open span:nth-child(3) { transform: translateY(-7px) rotate(-45deg); }
+
+    /* Mobile drawer */
+    .mobile-nav {
+      display: none; position: fixed; top: var(--nav-h); left: 0; right: 0;
+      background: rgba(6,8,16,0.97); backdrop-filter: blur(24px);
+      border-bottom: 1px solid var(--border);
+      flex-direction: column; padding: 1.5rem 2rem; gap: 1.2rem;
+      z-index: 190;
+    }
+    .mobile-nav.open { display: flex; }
+    .mobile-nav a {
+      color: var(--muted); text-decoration: none; font-size: 0.85rem;
+      letter-spacing: 0.08em; text-transform: uppercase; transition: color 0.2s;
+    }
+    .mobile-nav a:hover { color: var(--accent2); }
+
+    /* ─── BACK TO TOP ────────────────────────────── */
+    #backToTop {
+      position: fixed; bottom: 2rem; right: 2rem; z-index: 300;
+      width: 44px; height: 44px; border-radius: 50%;
+      background: var(--accent); border: none; cursor: none;
+      display: flex; align-items: center; justify-content: center;
+      opacity: 0; pointer-events: none;
+      transition: opacity 0.3s, transform 0.3s, background 0.2s;
+      transform: translateY(10px);
+    }
+    #backToTop.visible { opacity: 1; pointer-events: all; transform: translateY(0); }
+    #backToTop:hover { background: var(--accent2); }
+    #backToTop svg { width: 18px; height: 18px; stroke: #fff; }
+
+    /* ─── SHARED SECTION ─────────────────────────── */
+    /* FIX: scroll-margin-top so fixed nav doesn't cover headings */
+    section[id] { scroll-margin-top: var(--nav-h); }
+    section { position: relative; z-index: 1; padding: 6rem 4rem; }
+    .section-header {
+      display: flex; align-items: flex-end; justify-content: space-between;
+      margin-bottom: 3rem; gap: 2rem; flex-wrap: wrap;
+    }
+    .section-tag {
+      font-size: 0.68rem; letter-spacing: 0.18em; text-transform: uppercase;
+      color: var(--accent2); display: flex; align-items: center; gap: 0.6rem;
+      margin-bottom: 0.8rem;
+    }
+    .section-tag::before { content: '//'; color: var(--accent); }
+    .section-title {
+      font-family: 'Fraunces', serif; font-size: clamp(2rem, 4vw, 3.5rem);
+      font-weight: 700; letter-spacing: -0.03em; line-height: 1.05;
+    }
+    .section-title em { font-style: italic; font-weight: 300; color: var(--accent); }
+    .section-desc { color: var(--muted); font-size: 0.82rem; line-height: 1.9; max-width: 38ch; text-align: right; }
+
+    /* ─── HERO ───────────────────────────────────── */
+    .hero {
+      position: relative; z-index: 1; min-height: 100vh;
+      display: flex; flex-direction: column; justify-content: center;
+      padding: 8rem 4rem 6rem; overflow: hidden;
+    }
+    .hero-label {
+      font-size: 0.72rem; letter-spacing: 0.2em; text-transform: uppercase;
+      color: var(--accent2); margin-bottom: 1.5rem;
+      display: flex; align-items: center; gap: 0.8rem;
+      animation: fadeUp 0.8s ease both;
+    }
+    .hero-label::before { content: ''; width: 2.5rem; height: 1px; background: var(--accent2); }
+    .hero-title {
+      font-family: 'Fraunces', serif; font-size: clamp(3.5rem, 9vw, 8rem);
+      font-weight: 700; line-height: 0.92; letter-spacing: -0.04em; max-width: 14ch;
+      animation: fadeUp 0.9s 0.1s ease both;
+    }
+    .hero-title em { font-style: italic; font-weight: 300; color: transparent; -webkit-text-stroke: 1.5px var(--accent); }
+    .hero-sub {
+      margin-top: 2rem; max-width: 44ch; color: var(--muted); font-size: 0.9rem;
+      line-height: 1.85; animation: fadeUp 1s 0.2s ease both;
+    }
+    .hero-cta {
+      margin-top: 2.5rem; display: flex; gap: 1rem; flex-wrap: wrap;
+      animation: fadeUp 1s 0.3s ease both;
+    }
+    .btn-primary {
+      display: inline-flex; align-items: center; gap: 0.5rem;
+      background: var(--accent); color: #fff; padding: 0.8rem 2rem;
+      border-radius: 4px; text-decoration: none; font-family: 'Syne', sans-serif;
+      font-weight: 700; font-size: 0.85rem; letter-spacing: 0.04em;
+      transition: background 0.25s, transform 0.25s; border: none; cursor: none;
+    }
+    .btn-primary:hover { background: var(--accent2); color: var(--bg); transform: translateY(-2px); }
+    .btn-ghost {
+      display: inline-flex; align-items: center; gap: 0.5rem;
+      background: transparent; color: var(--text); padding: 0.8rem 2rem;
+      border-radius: 4px; text-decoration: none; font-family: 'Syne', sans-serif;
+      font-weight: 700; font-size: 0.85rem; letter-spacing: 0.04em;
+      border: 1px solid var(--border); transition: border-color 0.25s, color 0.25s; cursor: none;
+    }
+    .btn-ghost:hover { border-color: var(--accent); color: var(--accent); }
+    .hero-stats {
+      display: flex; gap: 3rem; margin-top: 4rem;
+      animation: fadeUp 1s 0.4s ease both;
+    }
+    .stat-num { font-family: 'Syne', sans-serif; font-size: 2.2rem; font-weight: 800; line-height: 1; }
+    .stat-num span { color: var(--accent2); }
+    .stat-label { font-size: 0.68rem; letter-spacing: 0.12em; color: var(--muted); text-transform: uppercase; margin-top: 0.3rem; }
+
+    /* ─── TICKER ─────────────────────────────────── */
+    .ticker-wrap {
+      width: 100%; overflow: hidden;
+      border-top: 1px solid var(--border); border-bottom: 1px solid var(--border);
+      background: rgba(79,111,255,0.04); padding: 0.85rem 0;
+      position: relative; z-index: 1;
+    }
+    /* FIX: use two copies for seamless infinite loop */
+    .ticker { display: flex; width: max-content; animation: ticker 35s linear infinite; }
+    .ticker:hover { animation-play-state: paused; }
+    .ticker-item {
+      font-size: 0.7rem; letter-spacing: 0.14em; text-transform: uppercase;
+      color: var(--muted); padding: 0 2.5rem; white-space: nowrap;
+      display: flex; align-items: center; gap: 1rem;
+    }
+    .ticker-item::after { content: '·'; color: var(--accent); }
+
+    /* ─── AI SECTION ─────────────────────────────── */
+    .ai-grid {
+      display: grid; grid-template-columns: repeat(3, 1fr);
+      gap: 1.5px; background: var(--border); border: 1.5px solid var(--border);
+      border-radius: 8px; overflow: hidden;
+    }
+    .ai-card {
+      background: var(--card); padding: 2.5rem; position: relative; overflow: hidden;
+      transition: background 0.3s; cursor: none;
+    }
+    .ai-card:hover { background: #111830; }
+    .ai-card::before {
+      content: ''; position: absolute; top: 0; left: 0; right: 0; height: 2px;
+      background: linear-gradient(90deg, transparent, var(--accent), transparent);
+      opacity: 0; transition: opacity 0.3s;
+    }
+    .ai-card:hover::before { opacity: 1; }
+    .card-icon {
+      width: 48px; height: 48px; border-radius: 6px; display: flex; align-items: center;
+      justify-content: center; font-size: 1.4rem; margin-bottom: 1.5rem;
+      background: rgba(79,111,255,0.12); border: 1px solid rgba(79,111,255,0.2);
+    }
+    .ai-card.green .card-icon { background: rgba(0,229,200,0.1); border-color: rgba(0,229,200,0.2); }
+    .ai-card.pink  .card-icon { background: rgba(255,79,145,0.1); border-color: rgba(255,79,145,0.2); }
+    .card-title { font-family: 'Syne', sans-serif; font-weight: 700; font-size: 1.05rem; margin-bottom: 0.8rem; }
+    .card-text   { color: var(--muted); font-size: 0.8rem; line-height: 1.85; }
+    .card-tag {
+      display: inline-block; margin-top: 1.2rem; font-size: 0.65rem;
+      letter-spacing: 0.12em; text-transform: uppercase; padding: 0.25rem 0.7rem;
+      border-radius: 999px; border: 1px solid var(--border); color: var(--muted);
+    }
+    /* Highlight box */
+    .highlight-box {
+      background: linear-gradient(135deg, rgba(79,111,255,0.08), rgba(0,229,200,0.05));
+      border: 1px solid rgba(79,111,255,0.2); border-radius: 12px; padding: 3rem;
+      display: grid; grid-template-columns: repeat(3,1fr); gap: 2rem; margin-top: 3rem;
+    }
+    .highlight-stat { text-align: center; }
+    .highlight-num {
+      font-family: 'Fraunces', serif; font-size: 3.5rem; font-weight: 700; line-height: 1;
+      background: linear-gradient(135deg, var(--accent), var(--accent2));
+      -webkit-background-clip: text; -webkit-text-fill-color: transparent; background-clip: text;
+    }
+    .highlight-label { font-size: 0.72rem; letter-spacing: 0.1em; color: var(--muted); text-transform: uppercase; margin-top: 0.5rem; }
+
+    /* ─── ML SECTION ─────────────────────────────── */
+    .ml-section { background: linear-gradient(180deg, transparent, rgba(79,111,255,0.03), transparent); }
+    .ml-timeline { display: grid; grid-template-columns: 1fr 1fr; gap: 4rem; }
+    .ml-visual {
+      background: var(--card); border: 1px solid var(--border);
+      border-radius: 12px; padding: 2rem; overflow: hidden;
+    }
+    .ml-visual-title {
+      font-family: 'Syne', sans-serif; font-weight: 700; font-size: 0.85rem;
+      letter-spacing: 0.06em; color: var(--accent2); text-transform: uppercase;
+      margin-bottom: 1.5rem; display: flex; align-items: center; gap: 0.5rem;
+    }
+    .ml-visual-title::before {
+      content: ''; width: 6px; height: 6px; border-radius: 50%;
+      background: var(--accent2); animation: pulse 2s infinite;
+    }
+    .nn-diagram { display: flex; justify-content: space-between; align-items: center; height: 200px; padding: 1rem; }
+    .nn-layer { display: flex; flex-direction: column; gap: 10px; align-items: center; }
+    .nn-layer-label { font-size: 0.6rem; letter-spacing: 0.1em; color: var(--muted); text-transform: uppercase; margin-bottom: 4px; }
+    .nn-node {
+      width: 22px; height: 22px; border-radius: 50%;
+      border: 2px solid var(--accent); background: rgba(79,111,255,0.15);
+      animation: glow 3s ease-in-out infinite;
+    }
+    .nn-node.active { border-color: var(--accent2); background: rgba(0,229,200,0.2); }
+    .nn-svg-wrap { flex: 1; opacity: 0.25; overflow: visible; }
+    .ml-types { display: flex; flex-direction: column; gap: 1rem; }
+    .ml-type-item {
+      background: var(--card); border: 1px solid var(--border); border-radius: 8px;
+      padding: 1.5rem; display: flex; gap: 1.2rem; align-items: flex-start;
+      transition: border-color 0.3s, transform 0.3s; cursor: none;
+    }
+    .ml-type-item:hover { border-color: var(--accent); transform: translateX(6px); }
+    .ml-type-num { font-family: 'Syne', sans-serif; font-size: 1.8rem; font-weight: 800; color: var(--accent); line-height: 1; opacity: 0.35; min-width: 2rem; }
+    .ml-type-name { font-family: 'Syne', sans-serif; font-weight: 700; font-size: 0.95rem; margin-bottom: 0.4rem; }
+    .ml-type-desc { color: var(--muted); font-size: 0.78rem; line-height: 1.7; }
+    .ml-type-examples { margin-top: 0.5rem; display: flex; gap: 0.4rem; flex-wrap: wrap; }
+    .example-tag { font-size: 0.62rem; padding: 0.18rem 0.55rem; border-radius: 3px; background: rgba(79,111,255,0.12); color: var(--accent); letter-spacing: 0.06em; }
+
+    /* Process strip */
+    .process-strip {
+      display: flex; align-items: stretch;
+      background: var(--border); border-radius: 10px; overflow: hidden;
+      border: 1px solid var(--border); margin-top: 3rem;
+    }
+    .process-step {
+      flex: 1; background: var(--card); padding: 2rem 1.5rem;
+      position: relative; transition: background 0.2s; cursor: none;
+    }
+    .process-step:hover { background: #111830; }
+    .process-step + .process-step { border-left: 1px solid var(--border); }
+    .step-num { font-family: 'Syne', sans-serif; font-weight: 800; font-size: 2.5rem; color: rgba(79,111,255,0.12); line-height: 1; margin-bottom: 0.5rem; }
+    .step-title { font-family: 'Syne', sans-serif; font-weight: 700; font-size: 0.82rem; margin-bottom: 0.4rem; }
+    .step-desc { color: var(--muted); font-size: 0.72rem; line-height: 1.7; }
+    .step-arrow {
+      position: absolute; right: -12px; top: 50%; transform: translateY(-50%);
+      width: 0; height: 0; z-index: 2;
+      border-top: 10px solid transparent; border-bottom: 10px solid transparent;
+      border-left: 12px solid var(--accent); display: none;
+    }
+    .process-step:not(:last-child) .step-arrow { display: block; }
+
+    /* ─── DATA ANALYTICS ─────────────────────────── */
+    .data-grid { display: grid; grid-template-columns: 1fr 1.4fr; gap: 2rem; }
+    .data-pillars {
+      display: flex; flex-direction: column; gap: 1px;
+      background: var(--border); border: 1px solid var(--border); border-radius: 10px; overflow: hidden;
+    }
+    /* FIX: pillar click states handled by JS */
+    .pillar-item {
+      background: var(--card); padding: 1.8rem 2rem; cursor: none;
+      transition: background 0.2s; position: relative;
+    }
+    .pillar-item:hover { background: #111830; }
+    .pillar-item.active-pillar { background: #111830; }
+    .pillar-item.active-pillar::before {
+      content: ''; position: absolute; left: 0; top: 0; bottom: 0;
+      width: 3px; background: var(--accent2);
+    }
+    .pillar-header { display: flex; align-items: center; gap: 1rem; margin-bottom: 0.6rem; }
+    .pillar-icon { font-size: 1.2rem; }
+    .pillar-name { font-family: 'Syne', sans-serif; font-weight: 700; font-size: 0.9rem; }
+    .pillar-text { color: var(--muted); font-size: 0.77rem; line-height: 1.7; }
+
+    .data-chart-box { background: var(--card); border: 1px solid var(--border); border-radius: 10px; padding: 2rem; display: flex; flex-direction: column; gap: 1.5rem; }
+    .chart-label { font-family: 'Syne', sans-serif; font-size: 0.8rem; font-weight: 700; color: var(--muted); text-transform: uppercase; letter-spacing: 0.1em; }
+    .bar-chart { display: flex; flex-direction: column; gap: 0.9rem; }
+    .bar-row { display: flex; align-items: center; gap: 1rem; }
+    .bar-name { font-size: 0.72rem; color: var(--muted); width: 110px; text-align: right; flex-shrink: 0; }
+    .bar-track { flex: 1; height: 8px; background: rgba(255,255,255,0.05); border-radius: 4px; overflow: hidden; }
+    /* FIX: bar fills start at 0 width and animate via JS + IntersectionObserver */
+    .bar-fill {
+      height: 100%; border-radius: 4px; width: 0;
+      background: linear-gradient(90deg, var(--accent), var(--accent2));
+      transition: width 1.2s cubic-bezier(0.25, 1, 0.5, 1);
+    }
+    .bar-val { font-size: 0.68rem; color: var(--accent2); font-family: 'Syne', sans-serif; font-weight: 700; width: 35px; }
+
+    /* ─── ALGORITHMS ─────────────────────────────── */
+    .algo-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 1rem; }
+    .algo-card {
+      background: var(--card); border: 1px solid var(--border); border-radius: 8px;
+      padding: 1.5rem; transition: transform 0.3s, border-color 0.3s, box-shadow 0.3s;
+      cursor: none; position: relative; overflow: hidden;
+    }
+    .algo-card:hover { transform: translateY(-6px); border-color: var(--accent); box-shadow: 0 16px 40px rgba(79,111,255,0.15); }
+    .algo-emoji { font-size: 1.8rem; margin-bottom: 1rem; display: block; }
+    .algo-name { font-family: 'Syne', sans-serif; font-weight: 700; font-size: 0.88rem; margin-bottom: 0.5rem; }
+    .algo-desc { color: var(--muted); font-size: 0.74rem; line-height: 1.7; }
+    .algo-type { display: inline-block; margin-top: 0.8rem; font-size: 0.6rem; letter-spacing: 0.1em; text-transform: uppercase; color: var(--accent2); }
+
+    /* ─── GLOSSARY ───────────────────────────────── */
+    .glossary-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 1rem; }
+    /* FIX: glossary cards are clickable — expandable */
+    .glossary-card {
+      background: var(--card); border: 1px solid var(--border); border-radius: 8px;
+      padding: 1.5rem; cursor: none; transition: border-color 0.2s, transform 0.2s;
+    }
+    .glossary-card:hover { border-color: rgba(79,111,255,0.4); transform: translateY(-3px); }
+    .gloss-term { font-family: 'DM Mono', monospace; font-size: 0.68rem; color: var(--accent2); letter-spacing: 0.06em; margin-bottom: 0.4rem; }
+    .gloss-name { font-family: 'Syne', sans-serif; font-weight: 700; font-size: 0.92rem; margin-bottom: 0.4rem; }
+    .gloss-def { color: var(--muted); font-size: 0.74rem; line-height: 1.75; }
+
+    /* ─── SUBMISSION SECTION ─────────────────────── */
+    #submit {
+      background: linear-gradient(180deg, transparent, rgba(0,229,200,0.03), transparent);
+    }
+    .submit-card {
+      max-width: 700px; margin: 0 auto;
+      background: var(--card); border: 1px solid var(--border); border-radius: 16px;
+      padding: 3rem; position: relative; overflow: hidden;
+    }
+    .submit-card::before {
+      content: ''; position: absolute; top: 0; left: 0; right: 0; height: 2px;
+      background: linear-gradient(90deg, var(--accent), var(--accent2), var(--accent3));
+    }
+    .submit-title { font-family: 'Syne', sans-serif; font-weight: 800; font-size: 1.4rem; margin-bottom: 0.5rem; }
+    .submit-sub { color: var(--muted); font-size: 0.8rem; line-height: 1.7; margin-bottom: 2rem; }
+    .checklist { display: flex; flex-direction: column; gap: 0.6rem; margin-bottom: 2rem; }
+    .check-item { display: flex; align-items: center; gap: 0.8rem; font-size: 0.78rem; color: var(--muted); }
+    .check-item .check-icon {
+      width: 18px; height: 18px; border-radius: 50%; border: 1.5px solid var(--border);
+      display: flex; align-items: center; justify-content: center; flex-shrink: 0;
+      font-size: 0.65rem; transition: background 0.3s, border-color 0.3s;
+    }
+    .check-item.done .check-icon { background: var(--accent2); border-color: var(--accent2); color: var(--bg); }
+    /* URL input */
+    .url-field { display: flex; flex-direction: column; gap: 0.5rem; margin-bottom: 0.8rem; }
+    .url-label { font-family: 'Syne', sans-serif; font-weight: 700; font-size: 0.78rem; color: var(--text); }
+    .url-input-wrap { display: flex; gap: 0.5rem; }
+    #urlInput {
+      flex: 1; background: rgba(255,255,255,0.04); border: 1.5px solid var(--border);
+      border-radius: 6px; padding: 0.75rem 1rem; color: var(--text);
+      font-family: 'DM Mono', monospace; font-size: 0.82rem; outline: none;
+      transition: border-color 0.25s;
+    }
+    #urlInput:focus { border-color: var(--accent); }
+    #urlInput.error { border-color: var(--accent3) !important; }
+    #urlInput.success { border-color: var(--accent2) !important; }
+    .url-hint { font-size: 0.7rem; color: var(--muted); }
+    .url-hint code { background: rgba(79,111,255,0.1); padding: 1px 5px; border-radius: 3px; color: var(--accent2); }
+    #urlError { font-size: 0.72rem; color: var(--accent3); margin-top: 0.3rem; min-height: 1rem; display: flex; align-items: center; gap: 0.4rem; }
+    #urlSuccess { font-size: 0.72rem; color: var(--accent2); margin-top: 0.3rem; min-height: 1rem; display: flex; align-items: center; gap: 0.4rem; display: none; }
+    .btn-submit {
+      width: 100%; padding: 0.9rem; background: var(--accent); color: #fff; border: none;
+      border-radius: 6px; font-family: 'Syne', sans-serif; font-weight: 700; font-size: 0.88rem;
+      letter-spacing: 0.04em; cursor: none; transition: background 0.25s, transform 0.2s;
+      margin-top: 1rem; display: flex; align-items: center; justify-content: center; gap: 0.6rem;
+    }
+    .btn-submit:hover { background: var(--accent2); color: var(--bg); transform: translateY(-2px); }
+    .btn-submit:active { transform: translateY(0); }
+    .btn-submit:disabled { background: var(--muted); cursor: not-allowed; transform: none; }
+    /* Success state */
+    .submit-success {
+      display: none; text-align: center; padding: 2rem 0;
+      flex-direction: column; align-items: center; gap: 1rem;
+    }
+    .submit-success.show { display: flex; }
+    .success-icon { font-size: 3rem; }
+    .success-title { font-family: 'Syne', sans-serif; font-weight: 800; font-size: 1.3rem; color: var(--accent2); }
+    .success-url {
+      background: rgba(0,229,200,0.08); border: 1px solid rgba(0,229,200,0.25);
+      border-radius: 8px; padding: 0.8rem 1.2rem; font-size: 0.82rem; color: var(--accent2);
+      word-break: break-all; text-align: center;
+    }
+    .copy-btn {
+      background: transparent; border: 1px solid var(--border); color: var(--muted);
+      font-size: 0.75rem; padding: 0.4rem 1rem; border-radius: 4px; cursor: none;
+      font-family: 'DM Mono', monospace; transition: border-color 0.2s, color 0.2s;
+    }
+    .copy-btn:hover { border-color: var(--accent2); color: var(--accent2); }
+
+    /* Vercel deploy steps */
+    .deploy-steps {
+      background: rgba(79,111,255,0.06); border: 1px solid rgba(79,111,255,0.18);
+      border-radius: 10px; padding: 1.5rem; margin-top: 2rem; display: flex; flex-direction: column; gap: 1rem;
+    }
+    .deploy-title { font-family: 'Syne', sans-serif; font-weight: 700; font-size: 0.82rem; color: var(--accent); margin-bottom: 0.2rem; }
+    .deploy-step { display: flex; gap: 0.8rem; align-items: flex-start; }
+    .deploy-num {
+      min-width: 22px; height: 22px; border-radius: 50%; background: var(--accent);
+      color: #fff; font-family: 'Syne', sans-serif; font-weight: 700; font-size: 0.68rem;
+      display: flex; align-items: center; justify-content: center; flex-shrink: 0; margin-top: 1px;
+    }
+    .deploy-text { font-size: 0.76rem; color: var(--muted); line-height: 1.65; }
+    .deploy-text code { color: var(--accent2); background: rgba(0,229,200,0.08); padding: 1px 5px; border-radius: 3px; font-size: 0.72rem; }
+
+    /* ─── FOOTER ─────────────────────────────────── */
+    footer {
+      position: relative; z-index: 1;
+      border-top: 1px solid var(--border); padding: 3rem 4rem;
+      display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 1.5rem;
+    }
+    .footer-brand { font-family: 'Syne', sans-serif; font-weight: 800; font-size: 1rem; }
+    .footer-brand span { color: var(--accent2); }
+    .footer-links { display: flex; gap: 2rem; flex-wrap: wrap; }
+    .footer-links a { color: var(--muted); text-decoration: none; font-size: 0.75rem; letter-spacing: 0.06em; transition: color 0.2s; cursor: none; }
+    .footer-links a:hover { color: var(--accent2); }
+    .footer-copy { color: var(--muted); font-size: 0.7rem; }
+
+    /* ─── ANIMATIONS ─────────────────────────────── */
+    @keyframes fadeUp   { from { opacity:0; transform:translateY(24px); } to { opacity:1; transform:translateY(0); } }
+    @keyframes pulse    { 0%,100% { opacity:1; transform:scale(1); } 50% { opacity:0.5; transform:scale(0.7); } }
+    @keyframes glow     { 0%,100% { box-shadow:0 0 0 rgba(79,111,255,0); } 50% { box-shadow:0 0 14px rgba(79,111,255,0.55); } }
+    @keyframes ticker   { from { transform:translateX(0); } to { transform:translateX(-50%); } }
+
+    .reveal { opacity:0; transform:translateY(30px); transition:opacity 0.7s ease, transform 0.7s ease; }
+    .reveal.visible    { opacity:1; transform:translateY(0); }
+    .reveal.delay-1    { transition-delay: 0.1s; }
+    .reveal.delay-2    { transition-delay: 0.2s; }
+
+    /* ─── RESPONSIVE ─────────────────────────────── */
+    @media (max-width: 1024px) {
+      .algo-grid { grid-template-columns: repeat(2, 1fr); }
+    }
+    @media (max-width: 768px) {
+      nav { padding: 0 1.5rem; }
+      .nav-links { display: none; }
+      .nav-badge { display: none; }
+      .hamburger { display: flex; }
+      section { padding: 4rem 1.5rem; }
+      .hero { padding: 7rem 1.5rem 4rem; }
+      .hero-stats { gap: 1.5rem; flex-wrap: wrap; }
+      .ai-grid { grid-template-columns: 1fr; }
+      .ml-timeline { grid-template-columns: 1fr; }
+      .algo-grid { grid-template-columns: 1fr 1fr; }
+      .data-grid { grid-template-columns: 1fr; }
+      .glossary-grid { grid-template-columns: 1fr 1fr; }
+      .process-strip { flex-direction: column; }
+      .process-step + .process-step { border-left: none; border-top: 1px solid var(--border); }
+      .process-step:not(:last-child) .step-arrow { display: none; }
+      .section-header { flex-direction: column; align-items: flex-start; }
+      .section-desc { text-align: left; }
+      .highlight-box { grid-template-columns: 1fr; }
+      .submit-card { padding: 2rem 1.5rem; }
+      footer { flex-direction: column; text-align: center; padding: 2rem 1.5rem; }
+    }
+    @media (max-width: 480px) {
+      .glossary-grid { grid-template-columns: 1fr; }
+      .algo-grid { grid-template-columns: 1fr; }
+      .hero-cta { flex-direction: column; }
+    }
+  </style>
+</head>
+<body>
+
+<!-- CURSOR -->
+<div class="cursor-dot" id="cursorDot"></div>
+<div class="cursor-ring" id="cursorRing"></div>
+
+<!-- PARTICLE CANVAS -->
+<canvas id="bg-canvas"></canvas>
+
+<!-- BACK TO TOP -->
+<button id="backToTop" aria-label="Back to top" onclick="window.scrollTo({top:0,behavior:'smooth'})">
+  <svg viewBox="0 0 24 24" fill="none" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="18 15 12 9 6 15"/></svg>
+</button>
+
+<!-- NAV -->
+<nav id="mainNav" role="navigation" aria-label="Main navigation">
+  <a class="nav-logo" href="#home" aria-label="NeuralEdge Home"><span>Neural</span>Edge</a>
+  <ul class="nav-links" role="list">
+    <li><a href="#ai">AI Fundamentals</a></li>
+    <li><a href="#ml">Machine Learning</a></li>
+    <li><a href="#data">Data Analytics</a></li>
+    <li><a href="#algorithms">Algorithms</a></li>
+    <li><a href="#glossary">Glossary</a></li>
+    <li><a href="#submit">Submit URL</a></li>
+  </ul>
+  <div class="nav-badge">Learn AI</div>
+  <button class="hamburger" id="hamburger" aria-label="Toggle menu" aria-expanded="false">
+    <span></span><span></span><span></span>
+  </button>
+</nav>
+
+<!-- MOBILE DRAWER -->
+<nav class="mobile-nav" id="mobileNav" aria-label="Mobile navigation">
+  <a href="#ai"         onclick="closeMobile()">AI Fundamentals</a>
+  <a href="#ml"         onclick="closeMobile()">Machine Learning</a>
+  <a href="#data"       onclick="closeMobile()">Data Analytics</a>
+  <a href="#algorithms" onclick="closeMobile()">Algorithms</a>
+  <a href="#glossary"   onclick="closeMobile()">Glossary</a>
+  <a href="#submit"     onclick="closeMobile()">Submit URL</a>
+</nav>
+
+<!-- ══════════════════════════════════ HERO ══ -->
+<section class="hero" id="home" aria-label="Hero">
+  <div class="hero-label">The Future of Intelligence</div>
+  <h1 class="hero-title">Master <em>AI, ML</em> &amp; Data Science</h1>
+  <p class="hero-sub">A comprehensive guide to the technologies reshaping the world — from foundational concepts to cutting-edge algorithms, explained with clarity and depth for every learner.</p>
+  <div class="hero-cta">
+    <a href="#ai"     class="btn-primary">Start Learning →</a>
+    <a href="#submit" class="btn-ghost">Submit Your URL</a>
+  </div>
+  <div class="hero-stats">
+    <div class="stat"><div class="stat-num">50<span>+</span></div><div class="stat-label">Core Concepts</div></div>
+    <div class="stat"><div class="stat-num">3</div><div class="stat-label">Domains</div></div>
+    <div class="stat"><div class="stat-num">12</div><div class="stat-label">Algorithms</div></div>
+    <div class="stat"><div class="stat-num">∞</div><div class="stat-label">Applications</div></div>
+  </div>
+</section>
+
+<!-- TICKER — two identical sets for seamless loop -->
+<div class="ticker-wrap" aria-hidden="true">
+  <div class="ticker" id="tickerTrack"></div>
+</div>
+
+<!-- ══════════════════════════════ AI SECTION ══ -->
+<section id="ai">
+  <div class="section-header reveal">
+    <div>
+      <div class="section-tag">01 — Artificial Intelligence</div>
+      <h2 class="section-title">What is <em>AI</em>?</h2>
+    </div>
+    <p class="section-desc">Artificial intelligence is the simulation of human intelligence processes by machines, especially computer systems.</p>
+  </div>
+
+  <div class="ai-grid reveal delay-1">
+    <div class="ai-card" tabindex="0" role="article" aria-label="Artificial Intelligence concept">
+      <div class="card-icon">🧠</div>
+      <div class="card-title">Artificial Intelligence</div>
+      <div class="card-text">AI refers to the simulation of human intelligence in machines programmed to think, reason, and learn. It encompasses any technique enabling machines to mimic human cognitive functions such as learning, problem-solving, perception, and language understanding.</div>
+      <span class="card-tag">Foundation</span>
+    </div>
+    <div class="ai-card green" tabindex="0" role="article" aria-label="Narrow AI concept">
+      <div class="card-icon">🔍</div>
+      <div class="card-title">Narrow AI (ANI)</div>
+      <div class="card-text">Also called Weak AI, Narrow AI is designed to perform a single specific task — like voice assistants, image recognition, or recommendation engines. All existing AI today is Narrow AI. It excels within its defined domain but cannot generalize beyond it.</div>
+      <span class="card-tag">Type</span>
+    </div>
+    <div class="ai-card pink" tabindex="0" role="article" aria-label="General AI concept">
+      <div class="card-icon">🌐</div>
+      <div class="card-title">General AI (AGI)</div>
+      <div class="card-text">AGI refers to a machine with the ability to understand, learn, and apply knowledge across a wide range of tasks at the level of a human being. It remains a theoretical goal — no AGI system exists today. Achieving AGI is one of the grand challenges of computer science.</div>
+      <span class="card-tag">Future</span>
+    </div>
+    <div class="ai-card" tabindex="0" role="article" aria-label="NLP concept">
+      <div class="card-icon">💬</div>
+      <div class="card-title">Natural Language Processing</div>
+      <div class="card-text">NLP gives computers the ability to understand, interpret, and generate human language. Applications include chatbots, sentiment analysis, machine translation, text summarization, and voice recognition systems like Siri, Alexa, and Google Assistant.</div>
+      <span class="card-tag">Subfield</span>
+    </div>
+    <div class="ai-card green" tabindex="0" role="article" aria-label="Computer Vision concept">
+      <div class="card-icon">👁️</div>
+      <div class="card-title">Computer Vision</div>
+      <div class="card-text">Computer Vision enables machines to interpret and make decisions based on visual data. It powers facial recognition, self-driving cars, medical image analysis, and quality inspection in manufacturing. CNNs are the backbone of modern CV systems.</div>
+      <span class="card-tag">Subfield</span>
+    </div>
+    <div class="ai-card pink" tabindex="0" role="article" aria-label="Expert Systems concept">
+      <div class="card-icon">🤖</div>
+      <div class="card-title">Expert Systems</div>
+      <div class="card-text">Expert systems simulate the decision-making ability of a human expert using a knowledge base of facts and rules to solve complex problems in a specific domain, like medical diagnosis or financial planning. MYCIN (1970s) was a landmark early example.</div>
+      <span class="card-tag">Classic AI</span>
+    </div>
+  </div>
+
+  <!-- FIX: added reveal class to highlight-box -->
+  <div class="highlight-box reveal delay-2">
+    <div class="highlight-stat"><div class="highlight-num">$1.8T</div><div class="highlight-label">AI Market by 2030</div></div>
+    <div class="highlight-stat"><div class="highlight-num">97M</div><div class="highlight-label">New Jobs Created</div></div>
+    <div class="highlight-stat"><div class="highlight-num">70%</div><div class="highlight-label">Enterprises Using AI</div></div>
+  </div>
+</section>
+
+<!-- ══════════════════════════════  ML SECTION ══ -->
+<section id="ml" class="ml-section">
+  <div class="section-header reveal">
+    <div>
+      <div class="section-tag">02 — Machine Learning</div>
+      <h2 class="section-title">How Machines <em>Learn</em></h2>
+    </div>
+    <p class="section-desc">ML is a subset of AI where systems learn from data, identify patterns, and make decisions with minimal human intervention.</p>
+  </div>
+
+  <div class="ml-timeline reveal">
+    <!-- Neural net diagram -->
+    <div class="ml-visual">
+      <div class="ml-visual-title">Neural Network Architecture</div>
+      <div class="nn-diagram">
+        <div class="nn-layer">
+          <div class="nn-layer-label">Input</div>
+          <div class="nn-node active"></div>
+          <div class="nn-node active"></div>
+          <div class="nn-node active"></div>
+          <div class="nn-node"></div>
+        </div>
+        <svg class="nn-svg-wrap" viewBox="0 0 80 160" preserveAspectRatio="none">
+          <line x1="10" y1="20" x2="70" y2="25" stroke="#4f6fff" stroke-width="0.8"/>
+          <line x1="10" y1="20" x2="70" y2="80" stroke="#4f6fff" stroke-width="0.8"/>
+          <line x1="10" y1="20" x2="70" y2="135" stroke="#4f6fff" stroke-width="0.8"/>
+          <line x1="10" y1="60" x2="70" y2="25" stroke="#00e5c8" stroke-width="0.8"/>
+          <line x1="10" y1="60" x2="70" y2="80" stroke="#4f6fff" stroke-width="0.8"/>
+          <line x1="10" y1="60" x2="70" y2="135" stroke="#4f6fff" stroke-width="0.8"/>
+          <line x1="10" y1="100" x2="70" y2="25" stroke="#4f6fff" stroke-width="0.8"/>
+          <line x1="10" y1="100" x2="70" y2="80" stroke="#4f6fff" stroke-width="0.8"/>
+          <line x1="10" y1="100" x2="70" y2="135" stroke="#00e5c8" stroke-width="0.8"/>
+          <line x1="10" y1="140" x2="70" y2="25" stroke="#4f6fff" stroke-width="0.8"/>
+          <line x1="10" y1="140" x2="70" y2="80" stroke="#4f6fff" stroke-width="0.8"/>
+          <line x1="10" y1="140" x2="70" y2="135" stroke="#4f6fff" stroke-width="0.8"/>
+        </svg>
+        <div class="nn-layer">
+          <div class="nn-layer-label">Hidden</div>
+          <div class="nn-node active"></div>
+          <div class="nn-node"></div>
+          <div class="nn-node active"></div>
+          <div class="nn-node"></div>
+          <div class="nn-node active"></div>
+        </div>
+        <svg class="nn-svg-wrap" viewBox="0 0 80 160" preserveAspectRatio="none">
+          <line x1="10" y1="25"  x2="70" y2="55" stroke="#00e5c8" stroke-width="0.8"/>
+          <line x1="10" y1="50"  x2="70" y2="55" stroke="#4f6fff" stroke-width="0.8"/>
+          <line x1="10" y1="80"  x2="70" y2="55" stroke="#4f6fff" stroke-width="0.8"/>
+          <line x1="10" y1="110" x2="70" y2="55" stroke="#4f6fff" stroke-width="0.8"/>
+          <line x1="10" y1="135" x2="70" y2="55" stroke="#4f6fff" stroke-width="0.8"/>
+          <line x1="10" y1="25"  x2="70" y2="100" stroke="#4f6fff" stroke-width="0.8"/>
+          <line x1="10" y1="50"  x2="70" y2="100" stroke="#4f6fff" stroke-width="0.8"/>
+          <line x1="10" y1="80"  x2="70" y2="100" stroke="#00e5c8" stroke-width="0.8"/>
+          <line x1="10" y1="110" x2="70" y2="100" stroke="#4f6fff" stroke-width="0.8"/>
+          <line x1="10" y1="135" x2="70" y2="100" stroke="#4f6fff" stroke-width="0.8"/>
+        </svg>
+        <div class="nn-layer">
+          <div class="nn-layer-label">Output</div>
+          <div class="nn-node active"></div>
+          <div class="nn-node"></div>
+        </div>
+      </div>
+      <div style="margin-top:1rem;padding-top:1rem;border-top:1px solid var(--border);">
+        <div style="font-size:0.72rem;color:var(--muted);line-height:1.85;">
+          A neural network consists of layers of interconnected nodes (neurons). Data flows forward through the network, with each layer learning increasingly abstract representations of the input data via weighted connections and activation functions.
+        </div>
+      </div>
+    </div>
+
+    <!-- ML type cards -->
+    <div class="ml-types">
+      <div class="ml-type-item" tabindex="0">
+        <div class="ml-type-num">01</div>
+        <div>
+          <div class="ml-type-name">Supervised Learning</div>
+          <div class="ml-type-desc">The model learns from labeled training data — input-output pairs. It learns to map inputs to outputs based on example pairs, building a general rule from the training set.</div>
+          <div class="ml-type-examples">
+            <span class="example-tag">Classification</span>
+            <span class="example-tag">Regression</span>
+            <span class="example-tag">Spam Detection</span>
+          </div>
+        </div>
+      </div>
+      <div class="ml-type-item" tabindex="0">
+        <div class="ml-type-num">02</div>
+        <div>
+          <div class="ml-type-name">Unsupervised Learning</div>
+          <div class="ml-type-desc">The model finds hidden patterns or intrinsic structures in unlabeled data. It discovers the underlying structure without being told what to look for — grouping or compressing data.</div>
+          <div class="ml-type-examples">
+            <span class="example-tag">Clustering</span>
+            <span class="example-tag">Dimensionality Reduction</span>
+            <span class="example-tag">Anomaly Detection</span>
+          </div>
+        </div>
+      </div>
+      <div class="ml-type-item" tabindex="0">
+        <div class="ml-type-num">03</div>
+        <div>
+          <div class="ml-type-name">Reinforcement Learning</div>
+          <div class="ml-type-desc">An agent learns by interacting with an environment, receiving rewards or penalties for its actions. It learns a strategy (policy) to maximize cumulative reward over time.</div>
+          <div class="ml-type-examples">
+            <span class="example-tag">Game AI</span>
+            <span class="example-tag">Robotics</span>
+            <span class="example-tag">Autonomous Vehicles</span>
+          </div>
+        </div>
+      </div>
+      <div class="ml-type-item" tabindex="0">
+        <div class="ml-type-num">04</div>
+        <div>
+          <div class="ml-type-name">Deep Learning</div>
+          <div class="ml-type-desc">A subfield using multi-layered neural networks to automatically learn hierarchical representations. Drives breakthroughs in image recognition, NLP, and generative AI like GPT and DALL·E.</div>
+          <div class="ml-type-examples">
+            <span class="example-tag">CNNs</span>
+            <span class="example-tag">Transformers</span>
+            <span class="example-tag">GANs</span>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Pipeline -->
+  <div>
+    <h3 style="font-family:'Syne',sans-serif;font-weight:700;font-size:1rem;margin-bottom:1.5rem;color:var(--muted);letter-spacing:0.04em;text-transform:uppercase;">The ML Development Pipeline</h3>
+    <div class="process-strip reveal">
+      <div class="process-step" tabindex="0"><div class="step-num">01</div><div class="step-title">Data Collection</div><div class="step-desc">Gather raw data from databases, APIs, sensors, and web scraping. Data quality and quantity are critical to model success.</div><div class="step-arrow"></div></div>
+      <div class="process-step" tabindex="0"><div class="step-num">02</div><div class="step-title">Preprocessing</div><div class="step-desc">Clean, normalize, encode, and split data. Handle missing values, remove outliers, and engineer features.</div><div class="step-arrow"></div></div>
+      <div class="process-step" tabindex="0"><div class="step-num">03</div><div class="step-title">Model Selection</div><div class="step-desc">Choose the right algorithm based on the problem type, data size, and interpretability requirements.</div><div class="step-arrow"></div></div>
+      <div class="process-step" tabindex="0"><div class="step-num">04</div><div class="step-title">Training</div><div class="step-desc">Feed labeled data to the model. The algorithm adjusts internal weights through optimization to minimize prediction error.</div><div class="step-arrow"></div></div>
+      <div class="process-step" tabindex="0"><div class="step-num">05</div><div class="step-title">Evaluation</div><div class="step-desc">Measure performance on unseen test data using accuracy, F1-score, RMSE, or AUC-ROC.</div><div class="step-arrow"></div></div>
+      <div class="process-step" tabindex="0"><div class="step-num">06</div><div class="step-title">Deployment</div><div class="step-desc">Integrate the trained model into production via APIs. Monitor continuously for drift and retrain as needed.</div></div>
+    </div>
+  </div>
+</section>
+
+<!-- ══════════════════════════ DATA ANALYTICS ══ -->
+<section id="data">
+  <div class="section-header reveal">
+    <div>
+      <div class="section-tag">03 — Data Analytics</div>
+      <h2 class="section-title">Turning Data into <em>Insight</em></h2>
+    </div>
+    <p class="section-desc">Data analytics is the science of examining raw data to draw conclusions, identify patterns, and support decision-making.</p>
+  </div>
+
+  <div class="data-grid reveal">
+    <!-- FIX: Pillar items now clickable — JS handles active state -->
+    <div class="data-pillars" role="tablist" aria-label="Analytics types">
+      <div class="pillar-item active-pillar" tabindex="0" role="tab" aria-selected="true" data-pillar="0">
+        <div class="pillar-header"><div class="pillar-icon">📊</div><div class="pillar-name">Descriptive Analytics</div></div>
+        <div class="pillar-text">Answers "What happened?" — summarizes historical data using statistics and visualization. Dashboards, reports, and KPIs are prime examples forming the foundation of all analytics work.</div>
+      </div>
+      <div class="pillar-item" tabindex="0" role="tab" aria-selected="false" data-pillar="1">
+        <div class="pillar-header"><div class="pillar-icon">🔎</div><div class="pillar-name">Diagnostic Analytics</div></div>
+        <div class="pillar-text">Answers "Why did it happen?" — uses drill-down, data discovery, and correlation to uncover root causes behind business outcomes and anomalies in data.</div>
+      </div>
+      <div class="pillar-item" tabindex="0" role="tab" aria-selected="false" data-pillar="2">
+        <div class="pillar-header"><div class="pillar-icon">🔮</div><div class="pillar-name">Predictive Analytics</div></div>
+        <div class="pillar-text">Answers "What will happen?" — uses statistical models and ML to forecast future outcomes. Powers churn prediction, demand forecasting, fraud detection, and risk assessment.</div>
+      </div>
+      <div class="pillar-item" tabindex="0" role="tab" aria-selected="false" data-pillar="3">
+        <div class="pillar-header"><div class="pillar-icon">⚡</div><div class="pillar-name">Prescriptive Analytics</div></div>
+        <div class="pillar-text">Answers "What should we do?" — recommends actions using optimization and simulation. The most advanced form, combining AI with BI for autonomous decision-making.</div>
+      </div>
+    </div>
+
+    <!-- Bar chart — FIX: animated on scroll via JS -->
+    <div class="data-chart-box">
+      <div class="chart-label">Key Data Analytics Tools — Market Adoption</div>
+      <div class="bar-chart" id="barChart">
+        <div class="bar-row"><div class="bar-name">Python</div><div class="bar-track"><div class="bar-fill" data-width="88"></div></div><div class="bar-val">88%</div></div>
+        <div class="bar-row"><div class="bar-name">SQL</div><div class="bar-track"><div class="bar-fill" data-width="82"></div></div><div class="bar-val">82%</div></div>
+        <div class="bar-row"><div class="bar-name">Tableau</div><div class="bar-track"><div class="bar-fill" data-width="65"></div></div><div class="bar-val">65%</div></div>
+        <div class="bar-row"><div class="bar-name">Power BI</div><div class="bar-track"><div class="bar-fill" data-width="58"></div></div><div class="bar-val">58%</div></div>
+        <div class="bar-row"><div class="bar-name">TensorFlow</div><div class="bar-track"><div class="bar-fill" data-width="55"></div></div><div class="bar-val">55%</div></div>
+        <div class="bar-row"><div class="bar-name">R Language</div><div class="bar-track"><div class="bar-fill" data-width="45"></div></div><div class="bar-val">45%</div></div>
+        <div class="bar-row"><div class="bar-name">Apache Spark</div><div class="bar-track"><div class="bar-fill" data-width="38"></div></div><div class="bar-val">38%</div></div>
+      </div>
+      <div style="padding-top:1.5rem;border-top:1px solid var(--border);">
+        <div style="font-family:'Syne',sans-serif;font-weight:700;font-size:0.78rem;margin-bottom:0.7rem;">Big Data — The 5 Vs</div>
+        <div style="display:flex;flex-wrap:wrap;gap:0.5rem;">
+          <span style="background:rgba(79,111,255,0.1);border:1px solid rgba(79,111,255,0.25);padding:0.3rem 0.7rem;border-radius:4px;font-size:0.68rem;color:var(--accent);">Volume — Scale</span>
+          <span style="background:rgba(0,229,200,0.1);border:1px solid rgba(0,229,200,0.25);padding:0.3rem 0.7rem;border-radius:4px;font-size:0.68rem;color:var(--accent2);">Velocity — Speed</span>
+          <span style="background:rgba(255,79,145,0.1);border:1px solid rgba(255,79,145,0.25);padding:0.3rem 0.7rem;border-radius:4px;font-size:0.68rem;color:var(--accent3);">Variety — Types</span>
+          <span style="background:rgba(79,111,255,0.1);border:1px solid rgba(79,111,255,0.25);padding:0.3rem 0.7rem;border-radius:4px;font-size:0.68rem;color:var(--accent);">Veracity — Quality</span>
+          <span style="background:rgba(0,229,200,0.1);border:1px solid rgba(0,229,200,0.25);padding:0.3rem 0.7rem;border-radius:4px;font-size:0.68rem;color:var(--accent2);">Value — Impact</span>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ══════════════════════════ ALGORITHMS ══ -->
+<section id="algorithms">
+  <div class="section-header reveal">
+    <div>
+      <div class="section-tag">04 — Algorithms</div>
+      <h2 class="section-title">Core ML <em>Algorithms</em></h2>
+    </div>
+    <p class="section-desc">The building blocks of machine learning — each optimized for specific problem types and data structures.</p>
+  </div>
+  <div class="algo-grid reveal">
+    <div class="algo-card" tabindex="0"><span class="algo-emoji">📈</span><div class="algo-name">Linear Regression</div><div class="algo-desc">Models the linear relationship between a dependent variable and independent variables. Used for continuous value prediction — house prices, sales forecasting, risk scoring.</div><div class="algo-type">Supervised · Regression</div></div>
+    <div class="algo-card" tabindex="0"><span class="algo-emoji">🌳</span><div class="algo-name">Decision Trees</div><div class="algo-desc">A tree-like model of decisions and their consequences. Each internal node tests a feature; leaves are class labels. Highly interpretable — used in medical diagnosis and credit scoring.</div><div class="algo-type">Supervised · Classification</div></div>
+    <div class="algo-card" tabindex="0"><span class="algo-emoji">🌲</span><div class="algo-name">Random Forest</div><div class="algo-desc">An ensemble of decision trees combining predictions through voting or averaging. Reduces overfitting, handles high-dimensional data well. Excellent general-purpose algorithm for tabular data.</div><div class="algo-type">Ensemble · Supervised</div></div>
+    <div class="algo-card" tabindex="0"><span class="algo-emoji">⚡</span><div class="algo-name">Gradient Boosting</div><div class="algo-desc">Builds weak learners sequentially, each correcting the errors of the previous. XGBoost, LightGBM, and CatBoost are state-of-the-art implementations dominating Kaggle competitions.</div><div class="algo-type">Ensemble · Boosting</div></div>
+    <div class="algo-card" tabindex="0"><span class="algo-emoji">📐</span><div class="algo-name">Support Vector Machine</div><div class="algo-desc">Finds the optimal hyperplane separating classes with maximum margin. Effective in high-dimensional spaces. Used for text classification, image recognition, and bioinformatics.</div><div class="algo-type">Supervised · Classification</div></div>
+    <div class="algo-card" tabindex="0"><span class="algo-emoji">🔵</span><div class="algo-name">K-Means Clustering</div><div class="algo-desc">Partitions data into K clusters by iteratively assigning points to the nearest centroid. Used for customer segmentation, image compression, and unlabeled pattern discovery.</div><div class="algo-type">Unsupervised · Clustering</div></div>
+    <div class="algo-card" tabindex="0"><span class="algo-emoji">🧮</span><div class="algo-name">Naive Bayes</div><div class="algo-desc">A probabilistic classifier based on Bayes' theorem with independence assumptions. Fast, interpretable, and effective for text classification, spam filtering, and sentiment analysis.</div><div class="algo-type">Supervised · Probabilistic</div></div>
+    <div class="algo-card" tabindex="0"><span class="algo-emoji">🔗</span><div class="algo-name">Neural Networks</div><div class="algo-desc">Interconnected layers of artificial neurons inspired by the brain. Deep neural networks power image recognition, language models, generative AI and virtually all modern AI breakthroughs.</div><div class="algo-type">Deep Learning</div></div>
+  </div>
+</section>
+
+<!-- ══════════════════════════ GLOSSARY ══ -->
+<section id="glossary">
+  <div class="section-header reveal">
+    <div>
+      <div class="section-tag">05 — Glossary</div>
+      <h2 class="section-title">Essential <em>Terms</em></h2>
+    </div>
+    <p class="section-desc">A quick-reference guide to the most important terminology in AI, ML, and data analytics.</p>
+  </div>
+  <div class="glossary-grid reveal">
+    <div class="glossary-card" tabindex="0"><div class="gloss-term">term_001</div><div class="gloss-name">Overfitting</div><div class="gloss-def">When a model learns training data too well — including its noise — and fails to generalize to new, unseen data. Combated with regularization, dropout, and cross-validation.</div></div>
+    <div class="glossary-card" tabindex="0"><div class="gloss-term">term_002</div><div class="gloss-name">Bias–Variance Tradeoff</div><div class="gloss-def">The balance between a model's simplicity (bias) and sensitivity to training data (variance). High bias = underfitting; high variance = overfitting. The sweet spot is the goal.</div></div>
+    <div class="glossary-card" tabindex="0"><div class="gloss-term">term_003</div><div class="gloss-name">Feature Engineering</div><div class="gloss-def">Using domain knowledge to create, transform, or select input variables that help ML algorithms learn better. Often the single most impactful step in a data science pipeline.</div></div>
+    <div class="glossary-card" tabindex="0"><div class="gloss-term">term_004</div><div class="gloss-name">Gradient Descent</div><div class="gloss-def">An optimization algorithm minimizing a loss function by iteratively moving in the direction of steepest descent. The core training mechanism for all neural networks.</div></div>
+    <div class="glossary-card" tabindex="0"><div class="gloss-term">term_005</div><div class="gloss-name">Cross-Validation</div><div class="gloss-def">A resampling technique to evaluate model performance on unseen data. K-fold CV splits data into K subsets, training on K-1 and testing on the remaining fold, rotating K times.</div></div>
+    <div class="glossary-card" tabindex="0"><div class="gloss-term">term_006</div><div class="gloss-name">Hyperparameter Tuning</div><div class="gloss-def">Finding optimal configuration settings for an ML algorithm (learning rate, tree depth, etc.) using Grid Search, Random Search, or Bayesian Optimization to maximize performance.</div></div>
+    <div class="glossary-card" tabindex="0"><div class="gloss-term">term_007</div><div class="gloss-name">Transfer Learning</div><div class="gloss-def">Leveraging a pre-trained model (ResNet, BERT) and fine-tuning it for a new related task. Dramatically reduces training time and data requirements for domain-specific problems.</div></div>
+    <div class="glossary-card" tabindex="0"><div class="gloss-term">term_008</div><div class="gloss-name">Regularization</div><div class="gloss-def">Techniques that prevent overfitting by penalizing model complexity. L1 (Lasso) encourages sparsity; L2 (Ridge) penalizes large weights; Dropout is used in neural networks.</div></div>
+    <div class="glossary-card" tabindex="0"><div class="gloss-term">term_009</div><div class="gloss-name">Confusion Matrix</div><div class="gloss-def">A table showing classification model performance: True Positives, False Positives, True Negatives, False Negatives. Used to derive precision, recall, F1-score, and accuracy.</div></div>
+    <div class="glossary-card" tabindex="0"><div class="gloss-term">term_010</div><div class="gloss-name">Embeddings</div><div class="gloss-def">Dense vector representations of data (words, images, users) in a continuous space where similar items cluster together. The foundation of modern NLP — Word2Vec, GloVe, BERT.</div></div>
+    <div class="glossary-card" tabindex="0"><div class="gloss-term">term_011</div><div class="gloss-name">Attention Mechanism</div><div class="gloss-def">Allows models to focus on relevant parts of the input when generating output. The core innovation in the Transformer architecture powering GPT, BERT, and all modern LLMs.</div></div>
+    <div class="glossary-card" tabindex="0"><div class="gloss-term">term_012</div><div class="gloss-name">Data Pipeline</div><div class="gloss-def">An automated series of steps to collect, process, store, and analyze data. Apache Kafka, Airflow, and Spark orchestrate the flow from raw data to business insights.</div></div>
+  </div>
+</section>
+
+<!-- ══════════════════════ SUBMISSION SECTION ══ -->
+<section id="submit">
+  <div class="section-header reveal">
+    <div>
+      <div class="section-tag">06 — Project Submission</div>
+      <h2 class="section-title">Submit Your <em>Vercel URL</em></h2>
+    </div>
+    <p class="section-desc">Deploy your project on Vercel and submit the live link for assessment review.</p>
+  </div>
+
+  <div class="submit-card reveal">
+    <!-- Pre-submission checklist -->
+    <div class="submit-title">Pre-Submission Checklist</div>
+    <div class="submit-sub">Verify all conditions are met before submitting your Vercel deployment link.</div>
+    <div class="checklist" id="checklist">
+      <div class="check-item done" data-check="0"><div class="check-icon">✓</div><span>Website developed using Antigravity</span></div>
+      <div class="check-item done" data-check="1"><div class="check-icon">✓</div><span>Project successfully deployed on Vercel</span></div>
+      <div class="check-item" id="checkUrl" data-check="2"><div class="check-icon"></div><span>Live URL is in format: <code style="color:var(--accent2);background:rgba(0,229,200,0.08);padding:1px 5px;border-radius:3px;font-size:0.7rem;">https://your-project.vercel.app</code></span></div>
+      <div class="check-item" id="checkLoad" data-check="3"><div class="check-icon"></div><span>Website loads correctly in incognito window</span></div>
+      <div class="check-item" id="checkFull" data-check="4"><div class="check-icon"></div><span>All pages, links, and content are functioning</span></div>
+    </div>
+
+    <!-- URL Form -->
+    <div id="submitForm">
+      <div class="url-field">
+        <label class="url-label" for="urlInput">Your Vercel Live URL</label>
+        <div class="url-input-wrap">
+          <input
+            type="url"
+            id="urlInput"
+            placeholder="https://your-project-name.vercel.app"
+            autocomplete="off"
+            spellcheck="false"
+            aria-label="Vercel deployment URL"
+            aria-describedby="urlError urlHint"
+          />
+        </div>
+        <span class="url-hint" id="urlHint">Must start with <code>https://</code> and end with <code>.vercel.app</code></span>
+        <div id="urlError" role="alert" aria-live="polite"></div>
+        <div id="urlSuccess" role="status" aria-live="polite"></div>
+      </div>
+      <button class="btn-submit" id="submitBtn" type="button" onclick="handleSubmit()">
+        <span id="submitBtnText">Validate &amp; Submit URL</span>
+      </button>
+    </div>
+
+    <!-- Success state (shown after valid submission) -->
+    <div class="submit-success" id="submitSuccess">
+      <div class="success-icon">🎉</div>
+      <div class="success-title">URL Validated &amp; Ready to Submit!</div>
+      <div class="success-url" id="confirmedUrl"></div>
+      <div style="display:flex;gap:0.8rem;flex-wrap:wrap;justify-content:center;">
+        <button class="copy-btn" onclick="copyUrl()">📋 Copy URL</button>
+        <button class="copy-btn" onclick="resetForm()" style="border-color:rgba(255,79,145,0.3);color:var(--accent3);">↩ Submit Another</button>
+      </div>
+      <div style="font-size:0.72rem;color:var(--muted);text-align:center;max-width:38ch;line-height:1.7;margin-top:0.5rem;">
+        Paste this URL in the submission box provided by your assessor. Ensure the site is live and publicly accessible at review time.
+      </div>
+    </div>
+
+    <!-- Deploy guide -->
+    <div class="deploy-steps">
+      <div class="deploy-title">🚀 How to Get Your Vercel URL</div>
+      <div class="deploy-step"><div class="deploy-num">1</div><div class="deploy-text">Log in to <code>vercel.com</code> and click <strong style="color:var(--text)">New Project</strong></div></div>
+      <div class="deploy-step"><div class="deploy-num">2</div><div class="deploy-text">Import your GitHub repo or drag-and-drop your project folder (must include <code>index.html</code>)</div></div>
+      <div class="deploy-step"><div class="deploy-num">3</div><div class="deploy-text">Click <strong style="color:var(--text)">Deploy</strong> — Vercel will auto-detect it as a static site and build it</div></div>
+      <div class="deploy-step"><div class="deploy-num">4</div><div class="deploy-text">After deployment, copy the URL at the top — it looks like <code>https://your-project.vercel.app</code></div></div>
+      <div class="deploy-step"><div class="deploy-num">5</div><div class="deploy-text">Open it in <strong style="color:var(--text)">incognito mode</strong> to verify it loads correctly before submitting</div></div>
+    </div>
+  </div>
+</section>
+
+<!-- FOOTER -->
+<footer>
+  <div class="footer-brand">Neural<span>Edge</span></div>
+  <nav class="footer-links" aria-label="Footer navigation">
+    <a href="#ai">AI</a>
+    <a href="#ml">Machine Learning</a>
+    <a href="#data">Data Analytics</a>
+    <a href="#algorithms">Algorithms</a>
+    <a href="#glossary">Glossary</a>
+    <a href="#submit">Submit</a>
+  </nav>
+  <div class="footer-copy">© 2025 NeuralEdge · Built with Antigravity · Deployed on Vercel</div>
+</footer>
+
+<!-- ══════════════════════════════ SCRIPTS ══ -->
+<script>
+/* ─── CURSOR ─────────────────────────────── */
+(function() {
+  const dot  = document.getElementById('cursorDot');
+  const ring = document.getElementById('cursorRing');
+  if (!dot || !ring) return;
+  let mx = -100, my = -100, rx = -100, ry = -100;
+  let dotX = -100, dotY = -100;
+  let ringW = 36, ringH = 36, targetW = 36, targetH = 36;
+
+  document.addEventListener('mousemove', e => { mx = e.clientX; my = e.clientY; });
+
+  // FIX: animate size changes via rAF lerp, not CSS transition (avoids jank)
+  function lerpCursor() {
+    dotX += (mx - dotX) * 0.9;
+    dotY += (my - dotY) * 0.9;
+    rx   += (mx - rx)   * 0.12;
+    ry   += (my - ry)   * 0.12;
+    ringW += (targetW - ringW) * 0.15;
+    ringH += (targetH - ringH) * 0.15;
+    dot.style.transform  = `translate(${dotX - 4}px,${dotY - 4}px)`;
+    ring.style.transform = `translate(${rx - ringW/2}px,${ry - ringH/2}px)`;
+    ring.style.width     = ringW + 'px';
+    ring.style.height    = ringH + 'px';
+    requestAnimationFrame(lerpCursor);
+  }
+  lerpCursor();
+
+  document.querySelectorAll('a,button,[tabindex="0"],.ai-card,.ml-type-item,.algo-card,.glossary-card,.pillar-item,.process-step').forEach(el => {
+    el.addEventListener('mouseenter', () => { targetW = targetH = 58; ring.classList.add('hovering'); });
+    el.addEventListener('mouseleave', () => { targetW = targetH = 36; ring.classList.remove('hovering'); });
+  });
+})();
+
+/* ─── TICKER ─────────────────────────────── */
+(function() {
+  const words = ['Artificial Intelligence','Machine Learning','Deep Learning','Neural Networks',
+    'Data Analytics','Natural Language Processing','Computer Vision','Reinforcement Learning',
+    'Big Data','Predictive Modeling','Gradient Descent','Transformers'];
+  const track = document.getElementById('tickerTrack');
+  if (!track) return;
+  // Two copies for seamless loop
+  for (let c = 0; c < 2; c++) {
+    words.forEach(w => {
+      const span = document.createElement('div');
+      span.className = 'ticker-item';
+      span.textContent = w;
+      track.appendChild(span);
+    });
+  }
+})();
+
+/* ─── HAMBURGER MENU ─────────────────────── */
+const hamburger  = document.getElementById('hamburger');
+const mobileNav  = document.getElementById('mobileNav');
+function closeMobile() {
+  mobileNav.classList.remove('open');
+  hamburger.classList.remove('open');
+  hamburger.setAttribute('aria-expanded', 'false');
+}
+if (hamburger) {
+  hamburger.addEventListener('click', () => {
+    const isOpen = mobileNav.classList.toggle('open');
+    hamburger.classList.toggle('open', isOpen);
+    hamburger.setAttribute('aria-expanded', String(isOpen));
+  });
+}
+
+/* ─── PARTICLE BACKGROUND ────────────────── */
+(function() {
+  const canvas = document.getElementById('bg-canvas');
+  const ctx    = canvas.getContext('2d');
+  let W, H, pts = [];
+  const resize = () => { W = canvas.width = innerWidth; H = canvas.height = innerHeight; };
+  resize();
+  window.addEventListener('resize', resize);
+
+  class P {
+    constructor() { this.r(); }
+    r() {
+      this.x  = Math.random() * W; this.y = Math.random() * H;
+      this.vx = (Math.random() - 0.5) * 0.28; this.vy = (Math.random() - 0.5) * 0.28;
+      this.s  = Math.random() * 1.4 + 0.3;
+      this.a  = Math.random() * 0.38 + 0.08;
+      this.c  = Math.random() > 0.5 ? '79,111,255' : '0,229,200';
+    }
+    u() { this.x += this.vx; this.y += this.vy; if (this.x<0||this.x>W||this.y<0||this.y>H) this.r(); }
+    d() { ctx.beginPath(); ctx.arc(this.x,this.y,this.s,0,Math.PI*2); ctx.fillStyle=`rgba(${this.c},${this.a})`; ctx.fill(); }
+  }
+  for (let i=0;i<110;i++) pts.push(new P());
+
+  let frame = 0;
+  (function loop() {
+    ctx.clearRect(0,0,W,H);
+    pts.forEach(p => { p.u(); p.d(); });
+    // connections — only compute every other frame for perf
+    if (frame++ % 2 === 0) {
+      for (let i=0;i<pts.length;i++) {
+        for (let j=i+1;j<pts.length;j++) {
+          const dx = pts[i].x - pts[j].x, dy = pts[i].y - pts[j].y;
+          const d  = Math.sqrt(dx*dx + dy*dy);
+          if (d < 115) { ctx.beginPath(); ctx.moveTo(pts[i].x,pts[i].y); ctx.lineTo(pts[j].x,pts[j].y); ctx.strokeStyle=`rgba(79,111,255,${0.055*(1-d/115)})`; ctx.lineWidth=0.5; ctx.stroke(); }
+        }
+      }
+    }
+    requestAnimationFrame(loop);
+  })();
+})();
+
+/* ─── SCROLL REVEAL ──────────────────────── */
+(function() {
+  const io = new IntersectionObserver((entries) => {
+    entries.forEach((e, i) => {
+      if (e.isIntersecting) {
+        setTimeout(() => e.target.classList.add('visible'), i * 70);
+        io.unobserve(e.target);
+      }
+    });
+  }, { threshold: 0.08 });
+  document.querySelectorAll('.reveal').forEach(el => io.observe(el));
+})();
+
+/* ─── BAR CHART — animate on scroll ─────── */
+(function() {
+  const chart = document.getElementById('barChart');
+  if (!chart) return;
+  let animated = false;
+  const io = new IntersectionObserver(entries => {
+    if (entries[0].isIntersecting && !animated) {
+      animated = true;
+      chart.querySelectorAll('.bar-fill').forEach((bar, i) => {
+        const w = bar.dataset.width;
+        setTimeout(() => { bar.style.width = w + '%'; }, i * 80);
+      });
+      io.disconnect();
+    }
+  }, { threshold: 0.2 });
+  io.observe(chart);
+})();
+
+/* ─── PILLAR TABS ────────────────────────── */
+(function() {
+  const items = document.querySelectorAll('.pillar-item');
+  items.forEach(item => {
+    const activate = () => {
+      items.forEach(i => { i.classList.remove('active-pillar'); i.setAttribute('aria-selected','false'); });
+      item.classList.add('active-pillar');
+      item.setAttribute('aria-selected','true');
+    };
+    item.addEventListener('click', activate);
+    item.addEventListener('keydown', e => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); activate(); } });
+  });
+})();
+
+/* ─── ACTIVE NAV HIGHLIGHT ───────────────── */
+(function() {
+  const secs  = document.querySelectorAll('section[id]');
+  const links = document.querySelectorAll('.nav-links a');
+  const onScroll = () => {
+    let cur = '';
+    secs.forEach(s => { if (window.scrollY >= s.offsetTop - 100) cur = s.id; });
+    links.forEach(a => { a.classList.toggle('active', a.getAttribute('href') === '#' + cur); });
+  };
+  window.addEventListener('scroll', onScroll, { passive: true });
+  onScroll();
+})();
+
+/* ─── BACK TO TOP ────────────────────────── */
+(function() {
+  const btn = document.getElementById('backToTop');
+  window.addEventListener('scroll', () => {
+    btn.classList.toggle('visible', window.scrollY > 400);
+  }, { passive: true });
+})();
+
+/* ─── URL VALIDATION & SUBMISSION ───────── */
+function validateURL(val) {
+  val = val.trim();
+  // Must start with https://
+  if (!val.startsWith('https://'))    return { ok: false, msg: '⚠ URL must start with https://' };
+  // Must end with .vercel.app (or .vercel.app/ or .vercel.app/something)
+  if (!/\.vercel\.app(\/.*)?$/.test(val)) return { ok: false, msg: '⚠ URL must end with .vercel.app' };
+  // No localhost
+  if (val.includes('localhost'))      return { ok: false, msg: '⚠ Localhost URLs are not accepted' };
+  // No github.com
+  if (val.includes('github.com'))     return { ok: false, msg: '⚠ GitHub repository links are not accepted' };
+  // Must have a project name
+  const match = val.match(/^https:\/\/([^.]+)\.vercel\.app/);
+  if (!match || match[1].trim() === '') return { ok: false, msg: '⚠ URL must include a project name before .vercel.app' };
+  return { ok: true };
+}
+
+const urlInput   = document.getElementById('urlInput');
+const urlError   = document.getElementById('urlError');
+const urlSuccess = document.getElementById('urlSuccess');
+const checkUrl   = document.getElementById('checkUrl');
+const checkLoad  = document.getElementById('checkLoad');
+const checkFull  = document.getElementById('checkFull');
+
+urlInput.addEventListener('input', () => {
+  const val = urlInput.value.trim();
+  if (!val) { clearFeedback(); return; }
+  const res = validateURL(val);
+  if (res.ok) {
+    urlInput.classList.remove('error'); urlInput.classList.add('success');
+    urlError.textContent = '';
+    urlSuccess.textContent = '✓ URL format looks correct';
+    urlSuccess.style.display = 'flex';
+    // tick off checklist items
+    checkUrl.classList.add('done');  checkUrl.querySelector('.check-icon').textContent = '✓';
+    checkLoad.classList.add('done'); checkLoad.querySelector('.check-icon').textContent = '✓';
+    checkFull.classList.add('done'); checkFull.querySelector('.check-icon').textContent = '✓';
+  } else {
+    urlInput.classList.add('error'); urlInput.classList.remove('success');
+    urlError.textContent = res.msg;
+    urlSuccess.style.display = 'none';
+    checkUrl.classList.remove('done');  checkUrl.querySelector('.check-icon').textContent = '';
+    checkLoad.classList.remove('done'); checkLoad.querySelector('.check-icon').textContent = '';
+    checkFull.classList.remove('done'); checkFull.querySelector('.check-icon').textContent = '';
+  }
+});
+
+function clearFeedback() {
+  urlInput.classList.remove('error','success');
+  urlError.textContent = '';
+  urlSuccess.style.display = 'none';
+}
+
+function handleSubmit() {
+  const val = urlInput.value.trim();
+  if (!val) { urlInput.classList.add('error'); urlError.textContent = '⚠ Please enter your Vercel URL'; return; }
+  const res = validateURL(val);
+  if (!res.ok) { urlInput.classList.add('error'); urlError.textContent = res.msg; return; }
+
+  // Animate button
+  const btn  = document.getElementById('submitBtn');
+  const text = document.getElementById('submitBtnText');
+  btn.disabled = true;
+  text.textContent = 'Validating…';
+  setTimeout(() => {
+    // Show success
+    document.getElementById('submitForm').style.display = 'none';
+    const success = document.getElementById('submitSuccess');
+    document.getElementById('confirmedUrl').textContent = val;
+    success.classList.add('show');
+  }, 900);
+}
+
+function copyUrl() {
+  const url = document.getElementById('confirmedUrl').textContent;
+  navigator.clipboard.writeText(url).then(() => {
+    const btn = document.querySelector('.copy-btn');
+    btn.textContent = '✓ Copied!';
+    btn.style.color = 'var(--accent2)';
+    setTimeout(() => { btn.textContent = '📋 Copy URL'; btn.style.color = ''; }, 2000);
+  }).catch(() => {
+    // Fallback for browsers without clipboard API
+    const ta = document.createElement('textarea');
+    ta.value = url; ta.style.position = 'fixed'; ta.style.opacity = '0';
+    document.body.appendChild(ta); ta.select(); document.execCommand('copy');
+    document.body.removeChild(ta);
+  });
+}
+
+function resetForm() {
+  document.getElementById('submitSuccess').classList.remove('show');
+  document.getElementById('submitForm').style.display = '';
+  const btn  = document.getElementById('submitBtn');
+  const text = document.getElementById('submitBtnText');
+  btn.disabled = false; text.textContent = 'Validate & Submit URL';
+  urlInput.value = '';
+  clearFeedback();
+  checkUrl.classList.remove('done');  checkUrl.querySelector('.check-icon').textContent = '';
+  checkLoad.classList.remove('done'); checkLoad.querySelector('.check-icon').textContent = '';
+  checkFull.classList.remove('done'); checkFull.querySelector('.check-icon').textContent = '';
+}
+</script>
+</body>
+</html>
